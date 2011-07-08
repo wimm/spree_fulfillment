@@ -17,7 +17,7 @@ module SpreeFulfillment
         alias_method :orig_process_payments!, :process_payments!
         def process_payments!
           orig_process_payments!
-          raise "fulfillment awaits you, lord!"
+          Fulfillment.create_for(self)
         end
         
       end
