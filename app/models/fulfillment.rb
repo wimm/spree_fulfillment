@@ -20,13 +20,15 @@ class Fulfillment < ActiveRecord::Base
       transition :from => :processing, :to => :completed
     end
     
-    after_transition any => :processing {|f| f.do_processing}
+    after_transition any => :processing do |f|
+       f.do_processing
+    end
   end
   
   
-  # Here is where we actually initiate the fulfillment using the 3rd party service.
+  # Where we actually initiate the fulfillment using the 3rd party service.
   def do_processing
-    AmazonFulfillment.fulfill(self)
+    (FulfillmentConfig[:adapter] + '_fulfillment').camelize.constantize.new(self).fulfill
   end
   
   # True if this fulfillment has a chance of being shipped, or already shipped.
@@ -41,6 +43,7 @@ class Fulfillment < ActiveRecord::Base
   # each of which links back to a product:  order.line_items.first.variant.product
   #
   def self.create_for(order)
+    f = nil
     Fulfillment.transaction do
       # Another safety check on having multiple fulfillments on the same order.  Check
       # that everything else is in error state.
@@ -51,7 +54,7 @@ class Fulfillment < ActiveRecord::Base
       f = Fulfillment.new(:order => order)
       f.save!
     end
-    start!
+    f.start!
   end
 
 end

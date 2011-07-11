@@ -4,9 +4,9 @@ class AmazonFulfillment
     @fulfillment = f
   end
   
-  def process
-    raise "wrong state #{f.state}" unless f.processing?
-    
+  def fulfill
+    raise "wrong state #{@fulfillment.state}" unless @fulfillment.processing?
+    raise 'right state'
   end
   
 end
