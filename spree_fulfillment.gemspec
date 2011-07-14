@@ -16,4 +16,5 @@ Gem::Specification.new do |s|
   s.requirements << 'none'
 
   s.add_dependency('spree', '>= 0.60.1')
+  s.add_dependency('active_fulfillment')
 end
