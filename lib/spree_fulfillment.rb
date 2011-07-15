@@ -12,6 +12,8 @@ module SpreeFulfillment
         Rails.env.production? ? require(c) : load(c)
       end
       
+      # Cleanup: should move these class modifications to decorator files.
+      # http://groups.google.com/group/spree-user/browse_thread/thread/5e43999179e65dfa/b3d5bab17de0026e
       
       # This provides a place to remember objects that need processing outside of
       # the restrictions on spree's order.update! method.  That is, to avoid infinite
@@ -30,9 +32,10 @@ module SpreeFulfillment
         end
 
         def fulfill_after_filter
-          Rails.logger.info '*' * 10 + "fulfill_after_filter #{@@fulfillment_store}"
+          #Rails.logger.info '*' * 10 + "fulfill_after_filter #{@@fulfillment_store}"
           @@fulfillment_store.each do |s|
             # Ship everything that's hinted to be ready to ship.
+            Fulfillment.log "sending shipment #{s.id}"
             s.ship!
           end
           @@fulfillment_store = []
@@ -64,15 +67,14 @@ module SpreeFulfillment
         
         
         def post_ready_fulfill
-          Rails.logger.info '*' * 10 + 'post_ready_fulfill'
+          Rails.logger.info "**** spree_fulfillment: post_ready_fulfill"
           # Remember this shipment so we can call ship on it later when it's safe to do so.
           Spree::BaseController.fulfillment_store(self)
         end
         
         def pre_ship_fulfill
-          Rails.logger.info '*' * 10 + 'pre_ship_fulfill'
-          Rails.logger.info '*' * 10 + 'YAY I AM SHIPPING'
-          self.tracking = "Y U NO SHIP"
+          Rails.logger.info "**** spree_fulfillment: pre_ship_fulfill"
+          Fulfillment.fulfill(self)
         end
         
         # The only purpose of this override is to work around spree's disabling of the

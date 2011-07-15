@@ -1,13 +1,8 @@
 SpreeFulfillment
 ================
 
-Introduction goes here.
+Spree extension to do fulfillment processing via Amazon when a shipment becomes ready.
 
 
-Example
-=======
 
-Example goes here.
-
-
-Copyright (c) 2011 [name of extension creator], released under the New BSD License
+Copyright (c) 2011 WIMM Labs, released under the New BSD License
