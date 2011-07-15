@@ -33,15 +33,18 @@ module SpreeFulfillment
 
         def fulfill_after_filter
           #Rails.logger.info '*' * 10 + "fulfill_after_filter #{@@fulfillment_store}"
-          @@fulfillment_store.each do |s|
+          @@fulfillment_store.each do |sid|
             # Ship everything that's hinted to be ready to ship.
-            Fulfillment.log "sending shipment #{s.id}"
+            s = Shipment.find(sid)
+            next unless s && s.ready?
+            Fulfillment.log "sending shipment #{sid}"
             s.ship!
           end
           @@fulfillment_store = []
         end
         
         def self.fulfillment_store(x)
+          return unless defined?(@@fulfillment_store)   # can happen from rails console
           @@fulfillment_store << x
         end
         
@@ -67,14 +70,17 @@ module SpreeFulfillment
         
         
         def post_ready_fulfill
-          Rails.logger.info "**** spree_fulfillment: post_ready_fulfill"
+          Fulfillment.log "post_ready_fulfill"
           # Remember this shipment so we can call ship on it later when it's safe to do so.
-          Spree::BaseController.fulfillment_store(self)
+          Spree::BaseController.fulfillment_store(self.id)
+          true
         end
         
         def pre_ship_fulfill
-          Rails.logger.info "**** spree_fulfillment: pre_ship_fulfill"
+          Fulfillment.log "pre_ship_fulfill start"
           Fulfillment.fulfill(self)
+          Fulfillment.log "pre_ship_fulfill end"
+          true
         end
         
         # The only purpose of this override is to work around spree's disabling of the

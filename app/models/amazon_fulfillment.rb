@@ -4,6 +4,7 @@ class AmazonFulfillment
     @shipment = s
   end
   
+  # For Amazon these are the API access key and secret.
   def credentials
     { :login => Fulfillment.config[:api_key], :password => Fulfillment.config[:secret_key] }
   end
@@ -45,16 +46,38 @@ class AmazonFulfillment
     end
   end
   
+  def ensure_shippable
+    # Safety double-check.  I think Spree should already enforce this.
+    unless @shipment.ready?
+      Fulfillment.log "wrong state: #{@shipment.state}"
+      throw :halt
+    end
+  end
+  
+  # Runs inside a state_machine callback.  So throw :halt is how we abort things.
   def fulfill
-    raise "wrong state: #{@shipment.state}" unless @shipment.ready?
+    Fulfillment.log "AmazonFulfillment.fulfill start"
+    ensure_shippable
     num = @shipment.number
     addr = address
     li = line_items
     opts = options
     Fulfillment.log "#{num}; #{addr}; #{li}; #{opts}"
-    resp = remote.fulfill(num, addr, li, opts)
-    Fulfillment.log "#{resp.params}"
-    resp.success?
+
+    begin
+      resp = remote.fulfill(num, addr, li, opts)
+      Fulfillment.log "#{resp.params}"
+    rescue => e
+      Fulfillment.log "failed - #{e}"
+      throw :halt
+    end
+    
+    # Stop the transition to shipped if there was an error.
+    unless resp.success?
+      Fulfillment.log "abort - response was in error"
+      throw :halt
+    end
+    Fulfillment.log "AmazonFulfillment.fulfill end"
   end
     
 end
