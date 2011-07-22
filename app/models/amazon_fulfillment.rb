@@ -13,9 +13,20 @@ class AmazonFulfillment
     @remote ||= ActiveMerchant::Fulfillment::AmazonService.new(credentials)
   end
   
+  def shipping_method
+    case @shipment.shipping_method.name.downcase
+    when /expedited/
+      'expedited'
+    when /priority/
+      'priority'
+    else
+      'standard'
+    end
+  end
+  
   def options
     {
-      :shipping_method => 'Standard',
+      :shipping_method => shipping_method,
       :order_date => @shipment.order.created_at,
       :comment => 'Thank you for your order.'
     }
