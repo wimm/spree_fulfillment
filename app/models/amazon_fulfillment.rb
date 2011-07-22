@@ -16,11 +16,11 @@ class AmazonFulfillment
   def shipping_method
     case @shipment.shipping_method.name.downcase
     when /expedited/
-      'expedited'
+      'Expedited'
     when /priority/
-      'priority'
+      'Priority'
     else
-      'standard'
+      'Standard'
     end
   end
   
