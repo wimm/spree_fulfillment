@@ -66,6 +66,34 @@ module SpreeFulfillment
       end
       
       
+      # Pass the order email through to Amazon.  One line added.
+      # See https://forums.aws.amazon.com/thread.jspa?messageID=173074&#173074
+      ActiveMerchant::Fulfillment::AmazonService.class_eval do
+
+        def build_fulfillment_request(order_id, shipping_address, line_items, options)
+          request = OPERATIONS[:outbound][:create]
+          soap_request(request) do |xml|
+            xml.tag! request, { 'xmlns' => SERVICES[:outbound][:xmlns] } do
+              xml.tag! "MerchantFulfillmentOrderId", order_id
+              xml.tag! "DisplayableOrderId", order_id
+              xml.tag! "DisplayableOrderDateTime", options[:order_date].strftime("%Y-%m-%dT%H:%M:%SZ")
+              xml.tag! "DisplayableOrderComment", options[:comment]
+              xml.tag! "ShippingSpeedCategory", options[:shipping_method]
+              xml.tag! "ShippingSpeedCategory", options[:shipping_method]
+              
+              # Adding this line...
+              xml.tag! "NotificationEmailList.1", options[:email]
+   
+              add_address(xml, shipping_address)
+              add_items(xml, line_items)
+            end
+          end
+        end
+
+      end
+      
+      
+      
       Shipment.class_eval do
         
         

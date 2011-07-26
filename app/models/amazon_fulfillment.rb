@@ -28,7 +28,8 @@ class AmazonFulfillment
     {
       :shipping_method => shipping_method,
       :order_date => @shipment.order.created_at,
-      :comment => 'Thank you for your order.'
+      :comment => 'Thank you for your order.',
+      :email => @shipment.order.email
     }
   end
   
