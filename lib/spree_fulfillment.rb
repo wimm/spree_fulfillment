@@ -107,9 +107,19 @@ module SpreeFulfillment
           new_state = self.state
           post_ready_fulfill if new_state == 'ready' and old_state != 'ready'
         end
-      
+        
+        
+        # Disable the Spree 'shipped' email since it's really going to be shipped later
+        # by the fulfillment service.
+        def after_ship
+          inventory_units.each &:ship!
+          # removing this call: ShipmentMailer.shipped_email(self).deliver
+          Fulfillment.log "preventing Shipment.after_ship from sending email"
+        end
+        
+        
       end
-      
+
     end
 
     config.to_prepare &method(:activate).to_proc
