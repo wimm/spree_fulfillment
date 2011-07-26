@@ -85,8 +85,13 @@ class AmazonFulfillment
     
     # Stop the transition to shipped if there was an error.
     unless resp.success?
-      Fulfillment.log "abort - response was in error"
-      throw :halt
+      if Fulfillment.config[:allow_missing] && resp.params["faultstring"] =~ /ItemMissingCatalogData/
+        # Ignore missing catalog items - can be handy for testing
+        Fulfillment.log "ignoring missing catalog item (test / dev setting - should not see this on prod)"
+      else
+        Fulfillment.log "abort - response was in error"
+        throw :halt
+      end
     end
     Fulfillment.log "AmazonFulfillment.fulfill end"
   end
