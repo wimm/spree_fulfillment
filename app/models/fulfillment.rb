@@ -5,7 +5,9 @@ class Fulfillment
   
   
   def self.fulfill(shipment)
-    (config[:adapter] + '_fulfillment').camelize.constantize.new(shipment).fulfill
+    ca = CONFIG[:adapter]
+    raise "missing adapter config for #{Rails.env} -- check fulfillment.yml" unless ca
+    (ca + '_fulfillment').camelize.constantize.new(shipment).fulfill
   end
 
   def self.config
@@ -14,6 +16,21 @@ class Fulfillment
 
   def self.log(msg)
     Rails.logger.info '**** spree_fulfillment: ' + msg
+  end
+  
+  # Passes any shipments that are ready to the fulfillment service
+  def self.process_ready
+    log "process_ready start"
+    Shipment.ready.each do |s|
+      s.ship
+    end
+    log "process_ready finish"
+  end
+  
+  # Gets tracking number and sends ship email when fulfillment house is done
+  def self.process_shipped
+    log "process_shipped start"
+    log "process_shipped finish"
   end
   
 end

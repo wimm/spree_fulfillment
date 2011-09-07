@@ -66,7 +66,7 @@ class AmazonFulfillment
     end
   end
   
-  # Runs inside a state_machine callback.  So throw :halt is how we abort things.
+  # Runs inside a state_machine callback.  So throwing :halt is how we abort things.
   def fulfill
     Fulfillment.log "AmazonFulfillment.fulfill start"
     ensure_shippable
@@ -86,7 +86,7 @@ class AmazonFulfillment
     
     # Stop the transition to shipped if there was an error.
     unless resp.success?
-      if Fulfillment.config[:allow_missing] && resp.params["faultstring"] =~ /ItemMissingCatalogData/
+      if Fulfillment.config[:development_mode] && resp.params["faultstring"] =~ /ItemMissingCatalogData/
         # Ignore missing catalog items - can be handy for testing
         Fulfillment.log "ignoring missing catalog item (test / dev setting - should not see this on prod)"
       else
