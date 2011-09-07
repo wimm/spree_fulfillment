@@ -38,7 +38,7 @@ Shipment.class_eval do
   alias_method :orig_determine_state, :determine_state
   def determine_state(order)
     return "fulfilling" if state == "fulfilling"
-    orig_determine_state
+    orig_determine_state(order)
   end
   
   
