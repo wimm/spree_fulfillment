@@ -8,7 +8,9 @@ module SpreeFulfillment
 
     def self.activate
       Dir.glob(File.join(File.dirname(__FILE__), "../app/**/*_decorator*.rb")) do |c|
-        Rails.application.config.cache_classes ? require(c) : load(c)
+        # For gem extensions, it appears that require is usable in dev and prod modes
+        # to load the patches once and only once.
+        require(c)
       end
     end
 
