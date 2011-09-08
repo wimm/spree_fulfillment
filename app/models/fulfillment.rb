@@ -21,8 +21,25 @@ class Fulfillment
   # Passes any shipments that are ready to the fulfillment service
   def self.process_ready
     log "process_ready start"
-    Shipment.ready.each do |s|
-      s.ship
+    Shipment.ready.map(&:id).each do |sid|
+      Shipment.transaction do
+        begin
+          # Use locking to avoid multiple shipments due to race conditions.
+          # Note there's some risk of deadlock and bad behavior due to holding
+          # a lock over a third party remote transaction which might be slow.
+          s = Shipment.find(sid, :lock => true)
+          if s && s.state == "ready"
+            s.ship
+          else
+            log "skipping ship for id #{sid} : #{s} #{s.try(:state)}"
+          end
+        rescue => e
+          log "failed to ship id #{sid} due to #{e}"
+          Airbrake.notify(e) unless CONFIG[:no_airbrake]
+          # continue on and try other shipments so that one bad shipment doesn't
+          # block an entire queue
+        end
+      end
     end
     log "process_ready finish"
   end
