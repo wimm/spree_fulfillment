@@ -1,5 +1,11 @@
 Shipment.class_eval do
   
+  # We can get infinite recursion if these options are applied more than once.  So ensure
+  # we are the one and only one.
+  raise "can't patch more than once" if defined?(self.sf_ensure_only_once)
+  def self.sf_ensure_only_once
+  end
+  
   scope :fulfilling, where(:state => 'fulfilling')
   
   state_machines[:state] = nil    # reset original state machine to start from scratch.
