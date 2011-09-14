@@ -4,10 +4,14 @@ class Fulfillment
   CONFIG = HashWithIndifferentAccess.new(YAML.load_file(CONFIG_FILE)[Rails.env])
   
   
-  def self.fulfill(shipment)
+  def self.service_for(shipment)
     ca = CONFIG[:adapter]
     raise "missing adapter config for #{Rails.env} -- check fulfillment.yml" unless ca
-    (ca + '_fulfillment').camelize.constantize.new(shipment).fulfill
+    (ca + '_fulfillment').camelize.constantize.new(shipment)
+  end
+  
+  def self.fulfill(shipment)
+    service_for(shipment).fulfill
   end
 
   def self.config
@@ -35,7 +39,7 @@ class Fulfillment
           end
         rescue => e
           log "failed to ship id #{sid} due to #{e}"
-          Airbrake.notify(e) unless CONFIG[:no_airbrake]
+          Airbrake.notify(e) if defined?(Airbrake)
           # continue on and try other shipments so that one bad shipment doesn't
           # block an entire queue
         end
@@ -47,6 +51,26 @@ class Fulfillment
   # Gets tracking number and sends ship email when fulfillment house is done
   def self.process_shipped
     log "process_shipped start"
+    Shipment.fulfilling.each do |s|
+      begin
+        log "querying tracking status for #{s.id}"
+        tracking = service_for(s).track
+        next unless tracking      # nil means we don't know yet.
+        if tracking == :error
+          log "failed at warehouse"
+          s.fail_at_warehouse     # put into a permanent error state for inspection / repair
+        else
+          log "got tracking number: #{tracking}"
+          s.update_attribute(:tracking, tracking)
+          s.ship_from_warehouse   # new tracking code means we just shipped
+        end
+      rescue => e
+        log "failed to get tracking info for id #{s.id} due to #{e}"
+        Airbrake.notify(e) if defined?(Airbrake)
+        # continue on and try other shipments so that one bad shipment doesn't
+        # block an entire queue
+      end
+    end
     log "process_shipped finish"
   end
   

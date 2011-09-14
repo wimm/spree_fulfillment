@@ -1,5 +1,16 @@
 class AmazonFulfillment
   
+  ActiveMerchant::Fulfillment::AmazonService.class_eval do
+    
+    # Used to get an error back if the order doesn't exist, so we can stop endlessly
+    # querying.
+    def fetch_tracking_raw(oid)
+      commit :outbound, :tracking, build_tracking_request(oid, {})
+    end
+    
+  end
+  
+
   def initialize(s)
     @shipment = s
   end
@@ -95,6 +106,17 @@ class AmazonFulfillment
       end
     end
     Fulfillment.log "AmazonFulfillment.fulfill end"
+  end
+  
+  # Returns the tracking number if there is one, else :error if there's a problem with the
+  # shipment that will result in a permanent failure to fulfill, else nil.
+  def track
+    resp = remote.fetch_tracking_raw(@shipment.number)
+    Fulfillment.log "#{resp.params}"
+    # This can happen, for example, if the SKU doesn't exist.
+    return :error if resp.faultstring["requested order not found"]
+    return nil unless resp.params[:tracking_numbers]      # not known yet
+    resp.params[:tracking_numbers][@shipment.number]
   end
     
 end

@@ -7,6 +7,7 @@ Shipment.class_eval do
   end
   
   scope :fulfilling, where(:state => 'fulfilling')
+  scope :fulfill_failed, where(:state => 'fulfill_fail')
   
   state_machines[:state] = nil    # reset original state machine to start from scratch.
 
@@ -24,6 +25,9 @@ Shipment.class_eval do
     end
     event :ship_from_warehouse do                                     # new event
       transition :from => 'fulfilling', :to => 'shipped'
+    end
+    event :fail_at_warehouse do                                       # new event
+      transition :from => 'fulfilling', :to => 'fulfill_fail'
     end
     before_transition :to => 'fulfilling', :do => :before_fulfilling  # new callback
     after_transition :to => 'shipped', :do => :after_ship
@@ -43,7 +47,7 @@ Shipment.class_eval do
   # Know about our new state - do not erase it accidentally.
   alias_method :orig_determine_state, :determine_state
   def determine_state(order)
-    return "fulfilling" if state == "fulfilling"
+    return state if ['fulfilling', 'fulfill_fail'].include?(state)
     orig_determine_state(order)
   end
   
