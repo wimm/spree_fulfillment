@@ -115,8 +115,8 @@ class AmazonFulfillment
     Fulfillment.log "#{resp.params}"
     # This can happen, for example, if the SKU doesn't exist.
     return :error if !resp.success? && resp.faultstring["requested order not found"]
-    return nil unless resp.params[:tracking_numbers]      # not known yet
-    resp.params[:tracking_numbers][@shipment.number]
+    return nil unless resp.params["tracking_numbers"]      # not known yet
+    resp.params["tracking_numbers"][@shipment.number]
   end
     
 end
