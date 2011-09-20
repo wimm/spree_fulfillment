@@ -54,18 +54,20 @@ class Fulfillment
     Shipment.fulfilling.each do |s|
       begin
         log "querying tracking status for #{s.id}"
-        tracking = service_for(s).track
-        next unless tracking      # nil means we don't know yet.
-        if tracking == :error
+        tracking_info = service_for(s).track
+        next unless tracking_info      # nil means we don't know yet.
+        if tracking_info == :error
           log "failed at warehouse"
           s.fail_at_warehouse     # put into a permanent error state for inspection / repair
         else
-          log "got tracking number: #{tracking}"
-          s.update_attribute(:tracking, tracking)
+          log "got tracking information: #{tracking_info}"
+          s.shipped_at = tracking_info[:ship_time]
+          s.tracking = "#{tracking_info[:carrier]}::#{tracking_info[:tracking_number]}"
           s.ship_from_warehouse   # new tracking code means we just shipped
         end
       rescue => e
         log "failed to get tracking info for id #{s.id} due to #{e}"
+        #log e.backtrace.join("\n")
         Airbrake.notify(e) if defined?(Airbrake)
         # continue on and try other shipments so that one bad shipment doesn't
         # block an entire queue

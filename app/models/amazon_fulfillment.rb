@@ -8,6 +8,34 @@ class AmazonFulfillment
       commit :outbound, :tracking, build_tracking_request(oid, {})
     end
     
+    # Monkeypatch of the original parse_tracking_response to include carrier, ship date, and arrival time.
+    # Changed lines are marked.
+    def parse_tracking_response(document)
+      response = {}
+      response[:tracking_numbers] = {}
+
+      track_node = REXML::XPath.first(document, '//ns1:FulfillmentShipmentPackage/ns1:TrackingNumber')
+      if track_node
+        id_node = REXML::XPath.first(document, '//ns1:MerchantFulfillmentOrderId')
+        response[:tracking_numbers][id_node.text] = track_node.text
+        # Changes start here:
+        carrier = REXML::XPath.first(document, '//ns1:FulfillmentShipmentPackage/ns1:CarrierCode')
+        ship_time = REXML::XPath.first(document, '//ns1:FulfillmentShipment/ns1:ShippingDateTime')
+        eta = REXML::XPath.first(document, '//ns1:FulfillmentShipment/ns1:EstimatedArrivalDateTime')
+        response[:fulfillment_info] = {}
+        response[:fulfillment_info][id_node.text] = {}
+        response[:fulfillment_info][id_node.text][:tracking_number] = track_node.text
+        response[:fulfillment_info][id_node.text][:carrier] = carrier.text if carrier
+        response[:fulfillment_info][id_node.text][:ship_time] = ship_time.text if ship_time
+        response[:fulfillment_info][id_node.text][:eta] = eta.text if eta
+        # Changes end here
+      end
+
+      response[:response_status] = SUCCESS
+      response
+    end
+    
+    
   end
   
 
@@ -115,8 +143,8 @@ class AmazonFulfillment
     Fulfillment.log "#{resp.params}"
     # This can happen, for example, if the SKU doesn't exist.
     return :error if !resp.success? && resp.faultstring["requested order not found"]
-    return nil unless resp.params["tracking_numbers"]      # not known yet
-    resp.params["tracking_numbers"][@shipment.number]
+    return nil unless resp.params["fulfillment_info"]      # not known yet
+    resp.params["fulfillment_info"][@shipment.number]
   end
     
 end

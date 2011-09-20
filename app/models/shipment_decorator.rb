@@ -47,6 +47,7 @@ Shipment.class_eval do
   # Know about our new state - do not erase it accidentally.
   alias_method :orig_determine_state, :determine_state
   def determine_state(order)
+    return 'shipped' if tracking && !tracking.empty?
     return state if ['fulfilling', 'fulfill_fail'].include?(state)
     orig_determine_state(order)
   end
