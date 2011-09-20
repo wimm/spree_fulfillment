@@ -21,7 +21,7 @@ class AmazonFulfillment
         # Changes start here:
         carrier = REXML::XPath.first(document, '//ns1:FulfillmentShipmentPackage/ns1:CarrierCode')
         ship_time = REXML::XPath.first(document, '//ns1:FulfillmentShipment/ns1:ShippingDateTime')
-        eta = REXML::XPath.first(document, '//ns1:FulfillmentShipment/ns1:EstimatedArrivalDateTime')
+        eta = REXML::XPath.first(document, '//ns1:FulfillmentShipmentPackage/ns1:EstimatedArrivalDateTime')
         response[:fulfillment_info] = {}
         response[:fulfillment_info][id_node.text] = {}
         response[:fulfillment_info][id_node.text][:tracking_number] = track_node.text
