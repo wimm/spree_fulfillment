@@ -85,6 +85,11 @@ class AmazonFulfillment
     }
   end
   
+  def max_quantity_failsafe(n)
+    return n unless Fulfillment.config[:max_quantity_failsafe]
+    [Fulfillment.config[:max_quantity_failsafe], n].min
+  end
+  
   def line_items
     skus = @shipment.inventory_units.map do |io|
       sku = io.variant.sku
@@ -93,7 +98,7 @@ class AmazonFulfillment
     end.uniq
     skus.map do |sku|
       num = @shipment.inventory_units.select{|io| io.variant.sku == sku}.size
-      { :sku => sku, :quantity => num }
+      { :sku => sku, :quantity => max_quantity_failsafe(num) }
     end
   end
   
