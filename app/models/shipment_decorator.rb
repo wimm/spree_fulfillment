@@ -11,6 +11,12 @@ Shipment.class_eval do
   
   state_machines[:state] = nil    # reset original state machine to start from scratch.
 
+  # We know that there will be preexisting methods from the original Spree state machine.
+  # Until there's a better API to update a state machine, just ignore the conflicts by
+  # overriding the old ones.  Ideally the state_machine gem would provide a way to delete
+  # an existing machine.
+  StateMachine::Machine.ignore_method_conflicts = true
+
   # This is a modified version of the original spree shipment state machine
   # with the indicated changes.
   state_machine :initial => 'pending', :use_transactions => false do
