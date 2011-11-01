@@ -53,8 +53,14 @@ class Fulfillment
     log "process_shipped start"
     Shipment.fulfilling.each do |s|
       begin
-        log "querying tracking status for #{s.id}"
-        tracking_info = service_for(s).track
+        tracking_info = if s.tracking.blank?
+          log "querying tracking status for #{s.id}"
+          service_for(s).track
+        else
+          log "preexisting tracking status for #{s.id} - #{s.tracking}"
+          ti = s.tracking.split('::')
+          { :ship_time => Time.now, :carrier => ti.first, :tracking_number => ti.last }
+        end
         next unless tracking_info      # nil means we don't know yet.
         if tracking_info == :error
           log "failed at warehouse"
