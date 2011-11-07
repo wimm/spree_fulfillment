@@ -33,6 +33,7 @@ class Fulfillment
           # a lock over a third party remote transaction which might be slow.
           s = Shipment.find(sid, :lock => true)
           if s && s.state == "ready"
+            log "request ship for #{s.id} at #{Time.now}"
             s.ship
           else
             log "skipping ship for id #{sid} : #{s} #{s.try(:state)}"
@@ -54,7 +55,7 @@ class Fulfillment
     Shipment.fulfilling.each do |s|
       begin
         tracking_info = if s.tracking.blank?
-          log "querying tracking status for #{s.id}"
+          log "querying tracking status for #{s.id} at #{Time.now}"
           service_for(s).track
         else
           log "preexisting tracking status for #{s.id} - #{s.tracking}"

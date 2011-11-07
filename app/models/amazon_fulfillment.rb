@@ -113,6 +113,7 @@ class AmazonFulfillment
   # Runs inside a state_machine callback.  So throwing :halt is how we abort things.
   def fulfill
     Fulfillment.log "AmazonFulfillment.fulfill start"
+    sleep 1   # avoid throttle from Amazon
     ensure_shippable
     num = @shipment.number
     addr = address
@@ -144,6 +145,7 @@ class AmazonFulfillment
   # Returns the tracking number if there is one, else :error if there's a problem with the
   # shipment that will result in a permanent failure to fulfill, else nil.
   def track
+    sleep 1   # avoid throttle from Amazon
     resp = remote.fetch_tracking_raw(@shipment.number)
     Fulfillment.log "#{resp.params}"
     # This can happen, for example, if the SKU doesn't exist.
