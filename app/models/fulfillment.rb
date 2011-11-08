@@ -36,7 +36,7 @@ class Fulfillment
             log "request ship for #{s.id} at #{Time.now}"
             s.ship
           else
-            log "skipping ship for id #{sid} : #{s} #{s.try(:state)}"
+            log "skipping ship for id #{sid} : #{s} #{s.try(:state)} #{s.try(:tracking)}"
           end
         rescue => e
           log "failed to ship id #{sid} due to #{e}"
@@ -54,7 +54,7 @@ class Fulfillment
     log "process_shipped start"
     Shipment.fulfilling.each do |s|
       begin
-        tracking_info = if s.tracking.blank?
+        tracking_info = unless s.valid_tracking?
           log "querying tracking status for #{s.id} at #{Time.now}"
           service_for(s).track
         else

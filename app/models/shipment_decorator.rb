@@ -40,16 +40,20 @@ Shipment.class_eval do
   end
 
 
+  def valid_tracking?
+    tracking && tracking['::']
+  end
+
   # If there's an error submitting to the fulfillment service, we should halt
   # the transition to 'fulfill' and stay in 'ready'.  That way transient errors
   # will get rehandled.  If there are persistent errors, that should be treated
   # as a bug.
   def before_fulfilling
     Fulfillment.log "before_fulfilling start"
-    if tracking.blank?
-      Fulfillment.fulfill(self)     # throws :halt on error, which aborts transition
-    else
+    if valid_tracking?
       Fulfillment.log "skipping warehouse fulfillment - existing tracking code #{tracking}"
+    else
+      Fulfillment.fulfill(self)     # throws :halt on error, which aborts transition
     end
     Fulfillment.log "before_fulfilling end"
   end
@@ -57,7 +61,8 @@ Shipment.class_eval do
   # Know about our new state - do not erase it accidentally.
   alias_method :orig_determine_state, :determine_state
   def determine_state(order)
-    return state if ['fulfilling', 'fulfill_fail'].include?(state)
+    return state if ['fulfilling', 'fulfill_fail', 'shipped'].include?(state)
+    return 'shipped' if valid_tracking?
     orig_determine_state(order)
   end
   
