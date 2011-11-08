@@ -53,7 +53,9 @@ class AmazonFulfillment
   end
   
   def shipping_method
-    case @shipment.shipping_method.name.downcase
+    sm = @shipment.shipping_method
+    return 'Standard' unless sm
+    case sm.name.downcase
     when /expedited/
       'Expedited'
     when /priority/
