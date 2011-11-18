@@ -8,6 +8,29 @@ class AmazonFulfillment
       commit :outbound, :tracking, build_tracking_request(oid, {})
     end
     
+    # See http://www.ruby-forum.com/topic/208730#908342
+    def clean_encoding(str)
+      # Try it as UTF-8 directly
+      str.dup.force_encoding('UTF-8')
+    rescue EncodingError
+      # Force it to UTF-8, throwing out invalid bits
+      str.encode!( 'UTF-8', invalid: :replace, undef: :replace )
+    end
+    
+    alias_method :orig_parse_response, :parse_response
+    def parse_response(service, op, xml)
+      # Force UTF-8 encoding
+      cxml = clean_encoding(xml)
+      resp = orig_parse_response(service, op, cxml)
+      if resp.is_a?(Hash) && resp[:success] == FAILURE && resp.keys.size == 1
+        # XML parse error
+        Rails.logger.info "*" * 20 + " xml parse error"
+        Rails.logger.info cxml
+      end
+      resp
+    end
+    
+    
     # Monkeypatch of the original parse_tracking_response to include carrier, ship date, and arrival time.
     # Changed lines are marked.
     def parse_tracking_response(document)
@@ -148,10 +171,11 @@ class AmazonFulfillment
   # shipment that will result in a permanent failure to fulfill, else nil.
   def track
     sleep 1   # avoid throttle from Amazon
+    Fulfillment.log "amazon order id #{@shipment.number}"
     resp = remote.fetch_tracking_raw(@shipment.number)
     Fulfillment.log "#{resp.params}"
     # This can happen, for example, if the SKU doesn't exist.
-    return :error if !resp.success? && resp.faultstring["requested order not found"]
+    return :error if !resp.success? && resp.params["faultstring"] && resp.faultstring["requested order not found"]
     return nil unless resp.params["fulfillment_info"]      # not known yet
     resp.params["fulfillment_info"][@shipment.number]
   end
