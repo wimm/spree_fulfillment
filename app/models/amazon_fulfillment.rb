@@ -22,7 +22,7 @@ class AmazonFulfillment
       # Force UTF-8 encoding
       cxml = clean_encoding(xml)
       resp = orig_parse_response(service, op, cxml)
-      if resp.is_a?(Hash) && resp[:success] == FAILURE && resp.keys.size == 1
+      if resp.is_a?(Hash) && resp[:success] == ActiveMerchant::Fulfillment::AmazonService::FAILURE && resp.keys.size == 1
         # XML parse error
         Rails.logger.info "*" * 20 + " xml parse error"
         Rails.logger.info cxml
@@ -54,7 +54,7 @@ class AmazonFulfillment
         # Changes end here
       end
 
-      response[:response_status] = SUCCESS
+      response[:response_status] = ActiveMerchant::Fulfillment::AmazonService::SUCCESS
       response
     end
     
